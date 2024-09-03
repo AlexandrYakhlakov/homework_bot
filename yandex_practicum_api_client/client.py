@@ -32,10 +32,10 @@ class YandexPracticumClient:
             params = {'from_date': int(from_date)}
         except ValueError:
             raise ValueError(f'from_date должен быть временем в формате Unix')
-        response = self._session.get(self.URL + 'homework_statuses/',
-                                     headers={'Authorization': f'OAuth {AppConfig.PRACTICUM_TOKEN}'},
-                                     params=params)
-        # response = self._request('GET', self.URL + 'homework_statuses/', params)
+        # response = self._session.get(self.URL + 'homework_statuses/',
+        #                              headers={'Authorization': f'OAuth {AppConfig.PRACTICUM_TOKEN}'},
+        #                              params=params)
+        response = self._request('GET', self.URL + 'homework_statuses/', params)
         return response.json()
 
     def __del__(self):
