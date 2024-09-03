@@ -1,6 +1,6 @@
 from requests.sessions import Session
 from config import AppConfig
-from requests.exceptions import HTTPError, Timeout
+from requests.exceptions import HTTPError, Timeout, RequestException
 from yandex_practicum_api_client.exceptions import YandexPracticumException
 
 
@@ -21,11 +21,18 @@ class YandexPracticumClient:
             status_code = http_error.response.status_code
             try:
                 response = http_error.response.json()
-                raise YandexPracticumException(status_code, response['code'], response['message'])
-            except ValueError:
-                raise YandexPracticumException(http_status=status_code, message=http_error.response.text)
-        except Timeout:
-            raise YandexPracticumException(http_status=504, message='Сервис недоступен')
+                raise YandexPracticumException(status_code,
+                                               response['code'],
+                                               response['message'],
+                                               http_error)
+            except ValueError as e:
+                raise YandexPracticumException(http_status=status_code,
+                                               message=http_error.response.text,
+                                               exception=e)
+        except Timeout as e:
+            raise YandexPracticumException(http_status=504, message='Сервис недоступен', exception=e)
+        except RequestException as e:
+            raise YandexPracticumException(http_status=500, exception=e)
 
     def homework_statuses(self, from_date=0):
         try:
