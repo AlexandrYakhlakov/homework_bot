@@ -3,7 +3,7 @@ class YandexPracticumException(Exception):
         self.http_status = http_status
         self.code = code
         self.message = message
-        self.exception =exception
+        self.exception = exception
 
     def __str__(self):
         if self.message:
