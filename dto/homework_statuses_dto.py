@@ -1,23 +1,57 @@
-from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 
 # todo: написать ревьюеру после отправки работы, что тут такие странные значения по умолчанию, так как
 #  иначе не продут тесты. В тестах респонс это одна структура данных, а в примере из доки другая структура данных
 class HomeworkDTO:
     def __init__(self,
-                 id = '',
-                 status = '',
-                 homework_name = '',
-                 reviewer_comment = '',
-                 date_updated = '',
-                 lesson_name = ''):
-        self.id = id
-        self.status = status
-        self.homework_name = homework_name
-        self.reviewer_comment = reviewer_comment
-        self.date_updated = date_updated
-        self.lesson_name = lesson_name
+                 status: str,
+                 homework_name: str,
+                 id: int = 0,
+                 reviewer_comment: str = '',
+                 date_updated: str = '',
+                 lesson_name: str = ''):
+
+        self._id = id
+        self._status = status
+        self._homework_name = homework_name
+        self._reviewer_comment = reviewer_comment
+        self._date_updated = date_updated
+        self._lesson_name = lesson_name
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def status(self):
+        return self._status
+
+    @property
+    def homework_name(self):
+        return self._homework_name
+
+    @property
+    def reviewer_comment(self):
+        return self._reviewer_comment
+
+    @property
+    def date_updated(self):
+        return self._date_updated
+
+    @property
+    def lesson_name(self):
+        return self._lesson_name
+
+    def __dict__(self):
+        return {
+            'id': self._id,
+            'status': self._status,
+            'homework_name': self._homework_name,
+            'reviewer_comment': self._reviewer_comment,
+            'date_updated': self._date_updated,
+            'lesson_name': self._lesson_name
+        }
 
 
 class HomeworkStatusesDTO:
