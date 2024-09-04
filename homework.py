@@ -1,3 +1,5 @@
+import sys
+
 from requests import HTTPError, Timeout, RequestException
 from telebot import TeleBot
 from config import AppConfig
@@ -7,6 +9,7 @@ import time
 import requests
 from http import HTTPStatus
 
+
 from yandex_practicum_api_client.exceptions import YandexPracticumException
 from dto.homework_statuses_dto import HomeworkStatusesDTO, HomeworkDTO
 
@@ -14,10 +17,12 @@ PRACTICUM_TOKEN = AppConfig.PRACTICUM_TOKEN
 TELEGRAM_TOKEN = AppConfig.TELEGRAM_TOKEN
 TELEGRAM_CHAT_ID = AppConfig.TELEGRAM_CHAT_ID
 
-RETRY_PERIOD = 10
-# todo: исправить на 10 минуть при отправке на ревью
-# RETRY_PERIOD = 10 * 60
-ENDPOINT = AppConfig.PRACTICUM_API_URL + 'homework_statuses/'
+logging.basicConfig(
+    format='%(asctime)s - [%(levelname)s] - %(message)s',
+    level=logging.DEBUG)
+
+RETRY_PERIOD = 10 * 60
+ENDPOINT = AppConfig.PRACTICUM_API_URL
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
 
@@ -29,47 +34,46 @@ HOMEWORK_VERDICTS = {
 
 
 def check_tokens():
-    config = {key: value for key, value in vars(AppConfig).items() if not key.startswith('__')}
-    error_message = ''
-    for key, value in config.items():
-        if not value:
-            error_message += f'Не инициализировано значение переменной окружения {key}\n'
-    if error_message:
-        raise IncorrectEnvironmentVariableValue(error_message)
+    """Проверка наличия значений обязательных переменных окружений приложения."""
+    if not all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID)):
+        logging.critical('Отсутствует обязательная переменная окружения')
+        raise IncorrectEnvironmentVariableValue('Отсутствует обязательная переменная окружения')
 
 
 def send_message(bot, message):
-    ...
-
-
-def validator_from_date(value):
-    """Валидатор для timestamp"""
+    """Отправка сообщения в чат AppConfig.TELEGRAM_CHAT_ID."""
     try:
-        return int(value)
-    except ValueError:
-        raise ValueError(f'from_date должен быть временем в формате Unix.'
-                         f'type from_date: {type(value)}')
+        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+        logging.debug(f'Отправлено сообщение: {message}')
+    except Exception as e:
+        logging.error(f'Ошибка отправки сообщения: {e}')
 
 
 def get_api_answer(timestamp):
     """Запрос и получение ответа от GET /homework_statuses/"""
-    from_date = validator_from_date(timestamp)
-    params = {'from_date': from_date}
+    params = {'from_date': timestamp}
     try:
-        response = requests.get(ENDPOINT, headers=HEADERS, params=params)
+        response = requests.get(ENDPOINT + 'homework_statuses/', headers=HEADERS, params=params)
         if response.status_code != HTTPStatus.OK:
             raise HTTPError
     except HTTPError as http_error:
-        status_code = http_error.response.status_code
+        status_code = response.status_code
         try:
-            response = http_error.response.json()
-            raise YandexPracticumException(status_code, response['code'], response['message'])
+            response = response.json()
+            raise YandexPracticumException(http_status=status_code,
+                                           code=response['code'],
+                                           message=response['message'],
+                                           exception=http_error)
         except ValueError:
-            raise YandexPracticumException(http_status=status_code, message=http_error.response.text)
-    except Timeout:
-        raise YandexPracticumException(http_status=504, message='Сервис недоступен')
+            raise YandexPracticumException(http_status=status_code,
+                                           message=response.text,
+                                           exception=http_error)
+    except Timeout as e:
+        raise YandexPracticumException(http_status=HTTPStatus.GATEWAY_TIMEOUT,
+                                       message='Сервис недоступен',
+                                       exception=e)
     except RequestException as e:
-        raise YandexPracticumException(http_status=500, exception=e)
+        raise YandexPracticumException(http_status=HTTPStatus.INTERNAL_SERVER_ERROR, exception=e)
     # todo: Написать ревьюеру после сдачи работы. Тесты требуют, чтобы функция возвращала dict.
     #  Какой смысла тогда проверять в check_respons, что респонс это dict?
     #  FAILED tests/test_bot.py::TestHomework::test_get_api_answers - AssertionError:
@@ -78,29 +82,49 @@ def get_api_answer(timestamp):
 
 
 def check_response(response):
-    HomeworkStatusesDTO(**response)
+    """Функция создает и возвращает экземпляр класса HomeworkStatusesDTO."""
+    return HomeworkStatusesDTO(**response)
 
 
 def parse_status(homework):
-    ...
-    # return f'Изменился статус проверки работы "{homework_name}". {verdict}'
+    """Формирование текста сообщения в зависимости от статуса домашней работы."""
+    homework_name = homework.get('homework_name')
+    if not homework_name:
+        raise KeyError('Key "homework_name" not found')
+    status = homework.get('status')
+    if not status:
+        raise KeyError('Key "status" not found')
+    verdict = HOMEWORK_VERDICTS.get(homework.get('status'))
+    if not verdict:
+        raise ValueError(f'Неизвестный статус работы: {status}')
+    return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def main():
     """Основная логика работы бота."""
-    # Создаем объект класса бота
     check_tokens()
-    bot = TeleBot(token=AppConfig.TELEGRAM_TOKEN)
-    timestamp = int(time.time())
+    bot = TeleBot(TELEGRAM_TOKEN)
     while True:
         try:
+            timestamp = int(time.time())
             response = get_api_answer(timestamp)
-            check_response(response)
+            homeworks_statuses = check_response(response)
+            if homeworks_statuses.homeworks:
+                for homework in homeworks_statuses.homeworks:
+                    message = parse_status(homework.__dict__())
+                    send_message(bot, message)
+            else:
+                logging.debug('Обновлений по домашним работам не найдено')
         except Exception as error:
-            message = f'Сбой в работе программы: {error}'
-            print(message)
+            logging.error(error, exc_info=True)
+            try:
+                message = f'Сбой в работе программы: {error}'
+                send_message(bot, message)
+            except Exception as error:
+                logging.error(error, exc_info=True)
         finally:
             time.sleep(RETRY_PERIOD)
+
 
 if __name__ == '__main__':
     main()
