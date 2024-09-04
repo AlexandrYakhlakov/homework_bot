@@ -7,6 +7,6 @@ class YandexPracticumException(Exception):
 
     def __str__(self):
         if self.message:
-            return 'http_status: {}, code: {}, message: {}, exception: {}'.format(
-                self.http_status, self.code, self.message, self.exception)
-        return f'Unknown error: {self.exception}'
+            return '{}: http_status: {}; code: {}; message: {}; exception: {};'.format(
+                YandexPracticumException.__name__, self.http_status, self.code, self.message, self.exception)
+        return f'{YandexPracticumException.__name__}. Unknown error: {self.exception}'
