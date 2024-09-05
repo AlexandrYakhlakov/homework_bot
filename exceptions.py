@@ -3,4 +3,4 @@ class IncorrectEnvironmentVariableValue(Exception):
         self.message = message
 
     def __str__(self):
-        return self.message
+        return f"{IncorrectEnvironmentVariableValue.__name__}: {self.message}"

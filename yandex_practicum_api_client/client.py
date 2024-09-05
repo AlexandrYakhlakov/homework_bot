@@ -1,6 +1,7 @@
+from requests.exceptions import HTTPError, RequestException, Timeout
 from requests.sessions import Session
+
 from config import AppConfig
-from requests.exceptions import HTTPError, Timeout, RequestException
 from yandex_practicum_api_client.exceptions import YandexPracticumException
 
 

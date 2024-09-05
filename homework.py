@@ -1,17 +1,15 @@
-import sys
-
-from requests import HTTPError, Timeout, RequestException
-from telebot import TeleBot
-from config import AppConfig
-from exceptions import IncorrectEnvironmentVariableValue
 import logging
 import time
-import requests
 from http import HTTPStatus
 
+import requests
+from requests import HTTPError, RequestException, Timeout
+from telebot import TeleBot
 
+from config import AppConfig
+from dto.homework_statuses_dto import HomeworkStatusesDTO
+from exceptions import IncorrectEnvironmentVariableValue
 from yandex_practicum_api_client.exceptions import YandexPracticumException
-from dto.homework_statuses_dto import HomeworkStatusesDTO, HomeworkDTO
 
 PRACTICUM_TOKEN = AppConfig.PRACTICUM_TOKEN
 TELEGRAM_TOKEN = AppConfig.TELEGRAM_TOKEN
@@ -34,10 +32,11 @@ HOMEWORK_VERDICTS = {
 
 
 def check_tokens():
-    """Проверка наличия значений обязательных переменных окружений приложения."""
+    """Проверка значений обязательных переменных окружений приложения."""
     if not all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID)):
         logging.critical('Отсутствует обязательная переменная окружения')
-        raise IncorrectEnvironmentVariableValue('Отсутствует обязательная переменная окружения')
+        raise IncorrectEnvironmentVariableValue(
+            'Отсутствует обязательная переменная окружения')
 
 
 def send_message(bot, message):
@@ -50,10 +49,12 @@ def send_message(bot, message):
 
 
 def get_api_answer(timestamp):
-    """Запрос и получение ответа от GET /homework_statuses/"""
+    """Запрос и получение ответа от GET /homework_statuses/."""
     params = {'from_date': timestamp}
     try:
-        response = requests.get(ENDPOINT + 'homework_statuses/', headers=HEADERS, params=params)
+        response = requests.get(ENDPOINT + 'homework_statuses/',
+                                headers=HEADERS,
+                                params=params)
         if response.status_code != HTTPStatus.OK:
             raise HTTPError
     except HTTPError as http_error:
@@ -73,7 +74,8 @@ def get_api_answer(timestamp):
                                        message='Сервис недоступен',
                                        exception=e)
     except RequestException as e:
-        raise YandexPracticumException(http_status=HTTPStatus.INTERNAL_SERVER_ERROR, exception=e)
+        raise YandexPracticumException(
+            http_status=HTTPStatus.INTERNAL_SERVER_ERROR, exception=e)
     # todo: Написать ревьюеру после сдачи работы. Тесты требуют, чтобы функция возвращала dict.
     #  Какой смысла тогда проверять в check_respons, что респонс это dict?
     #  FAILED tests/test_bot.py::TestHomework::test_get_api_answers - AssertionError:
@@ -87,7 +89,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Формирование текста сообщения в зависимости от статуса домашней работы."""
+    """Валидация сулности и проверка значения status."""
     homework_name = homework.get('homework_name')
     if not homework_name:
         raise KeyError('Key "homework_name" not found')
