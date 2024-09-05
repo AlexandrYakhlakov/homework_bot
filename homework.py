@@ -76,10 +76,6 @@ def get_api_answer(timestamp):
     except RequestException as e:
         raise YandexPracticumException(
             http_status=HTTPStatus.INTERNAL_SERVER_ERROR, exception=e)
-    # todo: Написать ревьюеру после сдачи работы. Тесты требуют, чтобы функция возвращала dict.
-    #  Какой смысла тогда проверять в check_respons, что респонс это dict?
-    #  FAILED tests/test_bot.py::TestHomework::test_get_api_answers - AssertionError:
-    #  Проверьте, что функция `get_api_answer` возвращает словарь
     return response.json()
 
 
