@@ -20,7 +20,7 @@ logging.basicConfig(
     level=logging.DEBUG)
 
 RETRY_PERIOD = 10 * 60
-ENDPOINT = AppConfig.PRACTICUM_API_URL
+ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
 
@@ -52,7 +52,7 @@ def get_api_answer(timestamp):
     """Запрос и получение ответа от GET /homework_statuses/."""
     params = {'from_date': timestamp}
     try:
-        response = requests.get(ENDPOINT + 'homework_statuses/',
+        response = requests.get(ENDPOINT,
                                 headers=HEADERS,
                                 params=params)
         if response.status_code != HTTPStatus.OK:
