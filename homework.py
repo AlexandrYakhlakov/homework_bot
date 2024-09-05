@@ -13,6 +13,12 @@ PRACTICUM_TOKEN = AppConfig.PRACTICUM_TOKEN
 TELEGRAM_TOKEN = AppConfig.TELEGRAM_TOKEN
 TELEGRAM_CHAT_ID = AppConfig.TELEGRAM_CHAT_ID
 
+ENV_ERROR_MESSAGE = 'Missing required environment variables: "{env_name}"'
+TYPE_ERROR_MESSAGE = '"{name}" type is not "{expected_type}". "{name}" is "{actual_type}"'
+KEY_ERROR_MESSAGE = 'Key "{key_name}" not in "{dict_name}"'
+UPDATE_STATUS_HOMEWORK_MESSAGE = 'Изменился статус проверки работы "{name}". {verdict}'
+UNKNOWN_STATUS_HOMEWORK_MESSAGE = 'Неизвестный статус работы: {name}'
+
 logging.basicConfig(
     format='%(asctime)s - [%(levelname)s] - %(message)s',
     level=logging.DEBUG)
@@ -27,9 +33,6 @@ HOMEWORK_VERDICTS = {
     'reviewing': 'Работа взята на проверку ревьюером.',
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
-
-MESSAGE_FROM_PRAKTIKUM = 'Изменился статус проверки работы "{name}". {verdict}'
-ENV_ERROR_MESSAGE = 'Missing required environment variables: {env_name}'
 
 
 def check_tokens():
@@ -86,22 +89,19 @@ def get_api_answer(timestamp):
 def check_response(response):
     """Функция создает и возвращает экземпляр класса HomeworkStatusesDTO."""
     if not isinstance(response, dict):
-        raise TypeError(f'Validation error: '
-                        f'response type is not dict. type(response) is {type(response)}')
+        raise TypeError(TYPE_ERROR_MESSAGE.format(
+            name='response', expected_type='dict', actual_type=type(response)))
     if 'current_date' not in response:
-        raise KeyError('Key "current_date" not in response')
+        raise KeyError(KEY_ERROR_MESSAGE.format(key_name='current_date', dict_name='response'))
     if 'homeworks' not in response:
-        raise KeyError('Key "homeworks" not in response')
-
+        raise KeyError(KEY_ERROR_MESSAGE.format(key_name='homeworks', dict_name='response'))
     if not isinstance(response['homeworks'], list):
-        raise TypeError(
-            f'Validation error: homeworks type is not list. '
-            f' type(homeworks) is {type(response["homeworks"])}')
-
-    for item in response['homeworks']:
-        if not isinstance(item, dict):
-            raise TypeError('Validation error: homeworks[] item type is not dict. '
-                            f'type(homeworks[]) is {type(item)}')
+        raise TypeError(TYPE_ERROR_MESSAGE.format(
+            name='homeworks', expected_type='list', actual_type=type(response["homeworks"])))
+    for homework in response['homeworks']:
+        if not isinstance(homework, dict):
+            raise TypeError(TYPE_ERROR_MESSAGE.format(
+                name='homework', expected_type='dict', actual_type=type(homework)))
 
 
 def parse_status(homework):
@@ -114,8 +114,8 @@ def parse_status(homework):
 
     verdict = HOMEWORK_VERDICTS.get(homework.get('status'))
     if not verdict:
-        raise ValueError(f'Неизвестный статус работы: {status}')
-    return MESSAGE_FROM_PRAKTIKUM.format(name=name, verdict=verdict)
+        raise ValueError(UNKNOWN_STATUS_HOMEWORK_MESSAGE.format(name=status))
+    return UPDATE_STATUS_HOMEWORK_MESSAGE.format(name=name, verdict=verdict)
 
 
 def main():
