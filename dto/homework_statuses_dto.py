@@ -71,15 +71,18 @@ class HomeworkStatusesDTO:
 
     def _parse_homeworks(self):
         if not isinstance(self._homeworks, list):
-            raise TypeError('Ошибка валидации HomeworkStatusesDTO.homeworks не list')
+            raise TypeError(
+                'Ошибка валидации HomeworkStatusesDTO.homeworks не list')
 
         parse_homeworks = []
         for item in self._homeworks:
             if not isinstance(item, dict):
-                raise TypeError('Ошибка валидации HomeworkStatusesDTO.homeworks[] не dict')
+                raise TypeError(
+                    'Ошибка валидации HomeworkStatusesDTO.homeworks[] не dict')
             parse_homeworks.append(HomeworkDTO(**item))
         self._homeworks = parse_homeworks
 
     def _current_date_validate(self):
         if not isinstance(self.current_date, int) or self.current_date < 0:
-            raise ValueError('Ошибка валидации current_date значение должно быть целочисленным и больше 0')
+            raise ValueError(
+                'Ошибка валидации current_date значение должно быть >= 0')

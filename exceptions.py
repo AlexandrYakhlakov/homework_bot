@@ -1,4 +1,6 @@
 class IncorrectEnvironmentVariableValue(Exception):
+    """Exception для для ошибок,
+      связанных с некорректными значениями переменных окружения"""
     def __init__(self, message):
         self.message = message
 
