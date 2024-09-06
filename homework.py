@@ -159,9 +159,10 @@ def main():
 
 if __name__ == '__main__':
     handlers = [logging.StreamHandler()]
-    if AppConfig.APP_ENV == 'dev':
+    if AppConfig.APP_ENV != 'prod':
         handlers.append(
             logging.FileHandler(os.path.dirname(__file__) + '/.log'))
+
     logging.basicConfig(
         format=('%(asctime)s - '
                 '[%(levelname)s] - '
