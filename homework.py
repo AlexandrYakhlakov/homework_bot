@@ -3,11 +3,10 @@ import os
 import time
 from http import HTTPStatus
 
-from dotenv import load_dotenv
 import requests
+from dotenv import load_dotenv
 from requests import RequestException
 from telebot import TeleBot
-
 
 load_dotenv()
 
@@ -36,9 +35,9 @@ CONNECTION_ERROR_MESSAGE = (
 )
 RESPONSE_DATA_MESSAGE = 'Данные ответа: code: "{code}"; error: "{error}"'
 INCORRECT_STATUS_CODE_MESSAGE = (
-        'Некорректный status_code: {status_code}' +
-        REQUEST_DATA_MESSAGE +
-        RESPONSE_DATA_MESSAGE
+    'Некорректный status_code: {status_code}'
+    + REQUEST_DATA_MESSAGE
+    + RESPONSE_DATA_MESSAGE
 )
 
 SENT_TO_TG_MESSAGE = 'Отправлено сообщение: {message}'
