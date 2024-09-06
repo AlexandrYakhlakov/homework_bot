@@ -25,9 +25,6 @@ INCORRECT_STATUS_CODE_MESSAGE = 'Некорректный status_code: {status_c
 RESPONSE_WITH_CODE_MESSAGE = 'Данные ответа: code: "{code}"; error: "{error}"'
 INVALID_RESPONSE_BODY_MESSAGE = ('Некорректный тип данных тела ответа, ожидается json. '
                                  'status_code: "{status_code}"; response_body: "{body}"')
-logging.basicConfig(
-    format='%(asctime)s - [%(levelname)s] - %(message)s',
-    level=logging.DEBUG)
 
 RETRY_PERIOD = 10 * 60
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
@@ -68,13 +65,15 @@ def get_api_answer(timestamp):
         response = requests.get(ENDPOINT,
                                 headers=HEADERS,
                                 params=params)
-    except (requests.RequestException, ConnectionError) as e:
+    except (RequestException, ConnectionError) as e:
         raise ConnectionError(f'{CONNECTION_ERROR_MESSAGE.format(exception=e)}.'
                               f' {request_data_message}')
     try:
         response_json = response.json()
-        if response.status_code != HTTPStatus.OK:
-            message = f'{INCORRECT_STATUS_CODE_MESSAGE.format(response.status_code)}. {request_data_message}'
+        status_code = response.status_code
+        if status_code != HTTPStatus.OK:
+            message = (f'{INCORRECT_STATUS_CODE_MESSAGE.format(status_code=status_code)}. '
+                       f'{request_data_message}')
             if 'code' in response_json or 'error' in response_json:
                 code = response_json.get('code') or ''
                 error = response_json.get('error') or ''
@@ -143,4 +142,7 @@ def main():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        format='%(asctime)s - [%(levelname)s] - %(message)s',
+        level=logging.DEBUG)
     main()
