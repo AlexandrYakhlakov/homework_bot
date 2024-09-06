@@ -16,6 +16,8 @@ TELEGRAM_CHAT_ID = AppConfig.TELEGRAM_CHAT_ID
 ENV_ERROR_MESSAGE = 'Missing required environment variables: "{env_name}"'
 TYPE_ERROR_MESSAGE = '"{name}" type is not "{expected_type}". "{name}" is "{actual_type}"'
 KEY_ERROR_MESSAGE = 'Key "{key_name}" not in "{dict_name}"'
+REQUEST_DATA_MESSAGE = 'Данные запроса: url: "{url}"; headers: "{headers}"; params: "{params}";'
+CONNECTION_ERROR_MESSAGE = 'Ошибка соединения: "{exception}"'
 UPDATE_STATUS_HOMEWORK_MESSAGE = 'Изменился статус проверки работы "{name}". {verdict}'
 UNKNOWN_STATUS_HOMEWORK_MESSAGE = 'Неизвестный статус работы: {name}'
 
@@ -62,27 +64,11 @@ def get_api_answer(timestamp):
         response = requests.get(ENDPOINT,
                                 headers=HEADERS,
                                 params=params)
-        if response.status_code != HTTPStatus.OK:
-            raise HTTPError
-    except HTTPError as http_error:
-        status_code = response.status_code
-        try:
-            response = response.json()
-            raise YandexPracticumException(http_status=status_code,
-                                           code=response['code'],
-                                           message=response['message'],
-                                           exception=http_error)
-        except ValueError:
-            raise YandexPracticumException(http_status=status_code,
-                                           message=response.text,
-                                           exception=http_error)
-    except Timeout as e:
-        raise YandexPracticumException(http_status=HTTPStatus.GATEWAY_TIMEOUT,
-                                       message='Сервис недоступен',
-                                       exception=e)
     except RequestException as e:
-        raise YandexPracticumException(
-            http_status=HTTPStatus.INTERNAL_SERVER_ERROR, exception=e)
+        raise ConnectionError(f'{CONNECTION_ERROR_MESSAGE.format(e)}. '
+                              f'{REQUEST_DATA_MESSAGE.format(ENDPOINT, HEADERS, params)}')
+    if response.status_code != HTTPStatus.OK:
+        raise ValueError('НЕ ТОТ СТАТУС КОД')
     return response.json()
 
 
@@ -105,7 +91,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Валидация сулности и проверка значения status."""
+    """Проверка наличия ключей и значения status."""
     for key in ('homework_name', 'status', 'id'):
         if key not in homework:
             raise KeyError(f'Key "{key}" not found')
