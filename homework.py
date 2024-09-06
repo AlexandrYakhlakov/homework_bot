@@ -4,13 +4,11 @@ from http import HTTPStatus
 from json import JSONDecodeError
 from operator import itemgetter
 
-
 import requests
 from requests import RequestException
 from telebot import TeleBot
 
 from config import AppConfig
-
 
 PRACTICUM_TOKEN = AppConfig.PRACTICUM_TOKEN
 TELEGRAM_TOKEN = AppConfig.TELEGRAM_TOKEN
@@ -23,8 +21,10 @@ REQUEST_DATA_MESSAGE = 'Данные запроса: url: "{url}"; headers: "{he
 CONNECTION_ERROR_MESSAGE = 'Ошибка соединения: "{exception}"'
 UPDATE_STATUS_HOMEWORK_MESSAGE = 'Изменился статус проверки работы "{name}". {verdict}'
 UNKNOWN_STATUS_HOMEWORK_MESSAGE = 'Неизвестный статус работы: {name}'
-INCORRET_STATUS_CODE_MESSAGE = 'Некорректный status_code: {status_code}'
-
+INCORRECT_STATUS_CODE_MESSAGE = 'Некорректный status_code: {status_code}'
+RESPONSE_WITH_CODE_MESSAGE = 'Данные ответа: code: "{code}"; error: "{error}"'
+INVALID_RESPONSE_BODY_MESSAGE = ('Некорректный тип данных тела ответа, ожидается json. '
+                                 'status_code: "{status_code}"; response_body: "{body}"')
 logging.basicConfig(
     format='%(asctime)s - [%(levelname)s] - %(message)s',
     level=logging.DEBUG)
@@ -32,7 +32,6 @@ logging.basicConfig(
 RETRY_PERIOD = 10 * 60
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
-
 
 HOMEWORK_VERDICTS = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
@@ -64,19 +63,29 @@ def send_message(bot, message):
 def get_api_answer(timestamp):
     """Запрос и получение ответа от GET /homework_statuses/."""
     params = {'from_date': timestamp}
+    request_data_message = REQUEST_DATA_MESSAGE.format(url=ENDPOINT, headers=HEADERS, params=params)
     try:
         response = requests.get(ENDPOINT,
                                 headers=HEADERS,
                                 params=params)
-        request_data_message = REQUEST_DATA_MESSAGE.format(url=ENDPOINT, headers=HEADERS, params=params)
-    except RequestException as e:
-        raise ConnectionError(f'{CONNECTION_ERROR_MESSAGE.format(e)}. {request_data_message}')
+    except (requests.RequestException, ConnectionError) as e:
+        raise ConnectionError(f'{CONNECTION_ERROR_MESSAGE.format(exception=e)}.'
+                              f' {request_data_message}')
+    try:
+        response_json = response.json()
+        if response.status_code != HTTPStatus.OK:
+            message = f'{INCORRECT_STATUS_CODE_MESSAGE.format(response.status_code)}. {request_data_message}'
+            if 'code' in response_json or 'error' in response_json:
+                code = response_json.get('code') or ''
+                error = response_json.get('error') or ''
+                raise ValueError(f'{message}. '
+                                 f'{RESPONSE_WITH_CODE_MESSAGE.format(code=code, error=error)}')
+            raise ValueError(f'{message}. Тело ответа: {response_json}')
+    except JSONDecodeError:
+        raise ValueError(f'{INVALID_RESPONSE_BODY_MESSAGE.format(response.status_code, response.text)}. '
+                         f'{request_data_message}')
 
-    if response.status_code != HTTPStatus.OK:
-        message = f'{INCORRET_STATUS_CODE_MESSAGE.format(response.status_code)}. {request_data_message}'
-        raise ValueError(message)
-
-    return response.json()
+    return response_json
 
 
 def check_response(response):
@@ -129,11 +138,6 @@ def main():
             send_message(bot, message)
         except Exception as error:
             logging.exception(error)
-            try:
-                message = f'Сбой в работе программы: {error}'
-                send_message(bot, message)
-            except Exception as error:
-                logging.error(error, exc_info=True)
         finally:
             time.sleep(RETRY_PERIOD)
 
