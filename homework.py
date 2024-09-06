@@ -3,6 +3,7 @@ import time
 from http import HTTPStatus
 from json import JSONDecodeError
 from operator import itemgetter
+import  os
 
 import requests
 from requests import RequestException
@@ -142,7 +143,14 @@ def main():
 
 
 if __name__ == '__main__':
+    handlers = [logging.StreamHandler()]
+    if AppConfig.APP_ENV == 'dev':
+        handlers.append(logging.FileHandler(os.path.dirname(__file__) + '/.log'))
     logging.basicConfig(
-        format='%(asctime)s - [%(levelname)s] - %(message)s',
-        level=logging.DEBUG)
+        format='%(asctime)s - [%(levelname)s] - %(funcName)s::%(lineno)d: %(message)s',
+        level=logging.DEBUG,
+        handlers=[*handlers]
+    )
     main()
+
+

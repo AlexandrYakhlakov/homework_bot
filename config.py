@@ -10,3 +10,4 @@ class AppConfig:
     PRACTICUM_API_URL = os.getenv('PRACTICUM_API_URL')
     TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
     TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+    APP_ENV = os.getenv('APP_ENV')
