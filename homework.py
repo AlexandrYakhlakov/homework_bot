@@ -18,8 +18,9 @@ TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 REQUIRED_ENV_VARS = ['PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID']
 
 ENV_ERROR_MESSAGE = 'Missing required environment variables: "{env_name}"'
-TYPE_ERROR_MESSAGE = ('"{name}" type is not "{expected_type}". '
-                      '"{name}" is "{actual_type}"')
+TYPE_ERROR_MESSAGE = (
+    '"{name}" type is not "{expected_type}". '
+    '"{name}" is "{actual_type}"')
 KEY_ERROR_MESSAGE = 'Key "{key_name}" not in "{dict_name}"'
 UNKNOWN_STATUS_HOMEWORK_MESSAGE = 'Неизвестный статус работы: {name}'
 UPDATE_STATUS_HOMEWORK_MESSAGE = (
@@ -28,14 +29,14 @@ UPDATE_STATUS_HOMEWORK_MESSAGE = (
 )
 REQUEST_DATA_MESSAGE = (
     'Данные запроса: url: "{url}"; headers: "{headers}"; '
-    'params: "{params}";'
+    'params: "{params}";. '
 )
 CONNECTION_ERROR_MESSAGE = (
     'Ошибка соединения: "{exception}". ' + REQUEST_DATA_MESSAGE
 )
-RESPONSE_DATA_MESSAGE = 'Данные ответа: code: "{code}"; error: "{error}"'
+RESPONSE_DATA_MESSAGE = 'Данные ответа: code: "{code}"; error: "{error}". '
 INCORRECT_STATUS_CODE_MESSAGE = (
-    'Некорректный status_code: {status_code}'
+    'Некорректный status_code: {status_code}. '
     + REQUEST_DATA_MESSAGE
     + RESPONSE_DATA_MESSAGE
 )
