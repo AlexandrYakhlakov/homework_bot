@@ -1,9 +1,12 @@
 import logging
 import time
 from http import HTTPStatus
+from json import JSONDecodeError
 from operator import itemgetter
+
+
 import requests
-from requests import HTTPError, RequestException, Timeout
+from requests import RequestException
 from telebot import TeleBot
 
 from config import AppConfig
@@ -20,6 +23,7 @@ REQUEST_DATA_MESSAGE = 'Данные запроса: url: "{url}"; headers: "{he
 CONNECTION_ERROR_MESSAGE = 'Ошибка соединения: "{exception}"'
 UPDATE_STATUS_HOMEWORK_MESSAGE = 'Изменился статус проверки работы "{name}". {verdict}'
 UNKNOWN_STATUS_HOMEWORK_MESSAGE = 'Неизвестный статус работы: {name}'
+INCORRET_STATUS_CODE_MESSAGE = 'Некорректный status_code: {status_code}'
 
 logging.basicConfig(
     format='%(asctime)s - [%(levelname)s] - %(message)s',
@@ -64,11 +68,14 @@ def get_api_answer(timestamp):
         response = requests.get(ENDPOINT,
                                 headers=HEADERS,
                                 params=params)
+        request_data_message = REQUEST_DATA_MESSAGE.format(url=ENDPOINT, headers=HEADERS, params=params)
     except RequestException as e:
-        raise ConnectionError(f'{CONNECTION_ERROR_MESSAGE.format(e)}. '
-                              f'{REQUEST_DATA_MESSAGE.format(ENDPOINT, HEADERS, params)}')
+        raise ConnectionError(f'{CONNECTION_ERROR_MESSAGE.format(e)}. {request_data_message}')
+
     if response.status_code != HTTPStatus.OK:
-        raise ValueError('НЕ ТОТ СТАТУС КОД')
+        message = f'{INCORRET_STATUS_CODE_MESSAGE.format(response.status_code)}. {request_data_message}'
+        raise ValueError(message)
+
     return response.json()
 
 
