@@ -87,11 +87,10 @@ def send_message(bot, message):
 
 def get_api_answer(timestamp):
     """Запрос и получение ответа от GET /homework_statuses/."""
-    params = {'from_date': timestamp}
     request_params = dict(
         url=ENDPOINT,
         headers=HEADERS,
-        params=params
+        params={'from_date': timestamp}
     )
     try:
         response = requests.get(**request_params)
@@ -171,7 +170,7 @@ def main():
     """Основная логика работы бота."""
     check_tokens()
     bot = TeleBot(TELEGRAM_TOKEN)
-    exceptions = set()
+    last_exception_msg = None
     timestamp = 0
     while True:
         try:
@@ -180,19 +179,14 @@ def main():
             homeworks = response['homeworks']
             if not homeworks:
                 logging.debug(NO_HOMEWORK_UPDATES_MESSAGE)
-                exceptions.clear()
                 continue
-            message = parse_status(homeworks[0])
-            if send_message(bot, message):
+            if send_message(bot, parse_status(homeworks[0])):
                 timestamp = response.get('current_date', timestamp)
-                exceptions.clear()
         except Exception as error:
             message = EXCEPTION_MESSAGE.format(error=error)
             logging.exception(message)
-            error = str(error)
-            if error not in exceptions:
-                send_message(bot, message)
-                exceptions.add(error)
+            if message != last_exception_msg and send_message(bot, message):
+                last_exception_msg = message
         finally:
             time.sleep(RETRY_PERIOD)
 
