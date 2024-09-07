@@ -50,7 +50,7 @@ NOT_SENT_TO_TG_MESSAGE = (
 NO_HOMEWORK_UPDATES_MESSAGE = 'Обновлений по домашним работам не найдено'
 EXCEPTION_MESSAGE = 'Application Error: {error}'
 
-RETRY_PERIOD = 10 * 60
+RETRY_PERIOD = 10
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -157,20 +157,21 @@ def parse_status(homework):
                     dict_name='homework'
                 )
             )
-    name = homework.get('homework_name')
     status = homework.get('status')
-
     verdict = HOMEWORK_VERDICTS.get(status)
     if not verdict:
         raise ValueError(UNKNOWN_STATUS_HOMEWORK_MESSAGE.format(name=status))
-    return UPDATE_STATUS_HOMEWORK_MESSAGE.format(name=name, verdict=verdict)
+    return UPDATE_STATUS_HOMEWORK_MESSAGE.format(
+        name=homework.get('homework_name'),
+        verdict=verdict
+    )
 
 
 def main():
     """Основная логика работы бота."""
     check_tokens()
     bot = TeleBot(TELEGRAM_TOKEN)
-    last_exception = None
+    exceptions = set()
     timestamp = 0
     while True:
         try:
@@ -179,16 +180,19 @@ def main():
             homeworks = response['homeworks']
             if not homeworks:
                 logging.debug(NO_HOMEWORK_UPDATES_MESSAGE)
+                exceptions.clear()
                 continue
             message = parse_status(homeworks[0])
             if send_message(bot, message):
                 timestamp = response.get('current_date', timestamp)
+                exceptions.clear()
         except Exception as error:
             message = EXCEPTION_MESSAGE.format(error=error)
             logging.exception(message)
-            if str(error) != str(last_exception):
+            error = str(error)
+            if error not in exceptions:
                 send_message(bot, message)
-            last_exception = error
+                exceptions.add(error)
         finally:
             time.sleep(RETRY_PERIOD)
 
