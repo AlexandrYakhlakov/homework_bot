@@ -29,28 +29,23 @@ UPDATE_STATUS_HOMEWORK_MESSAGE = (
 )
 REQUEST_DATA_MESSAGE = (
     'Данные запроса: url: "{url}"; headers: "{headers}"; '
-    'params: "{params}";. '
+    'params: "{params}";.'
 )
-CONNECTION_ERROR_MESSAGE = (
-    'Ошибка соединения: "{exception}". ' + REQUEST_DATA_MESSAGE
+CONNECTION_ERROR_MESSAGE = 'Ошибка соединения: "{exception}".'
+CONNECTION_ERROR_DETAIL_MESSAGE = (
+    f'{CONNECTION_ERROR_MESSAGE} {REQUEST_DATA_MESSAGE}'
 )
-RESPONSE_DATA_MESSAGE = 'Данные ответа: code: "{code}"; error: "{error}". '
-INCORRECT_STATUS_CODE_MESSAGE = (
-    'Некорректный status_code: {status_code}. '
-    + REQUEST_DATA_MESSAGE
-    + RESPONSE_DATA_MESSAGE
+RESPONSE_DATA_MESSAGE = 'Данные ответа: code: "{code}"; error: "{error}".'
+INCORRECT_STATUS_CODE_MESSAGE = 'Некорректный status_code: {status_code}.'
+INCORRECT_STATUS_CODE_DETAIL_MESSAGE = (
+    f'{INCORRECT_STATUS_CODE_MESSAGE} '
+    f'{REQUEST_DATA_MESSAGE} '
+    f'{RESPONSE_DATA_MESSAGE}'
 )
 
 SENT_TO_TG_MESSAGE = 'Отправлено сообщение: {message}'
 NOT_SENT_TO_TG_MESSAGE = (
-    'Ошибка:"{exception}"; Сообщение: "{message}"; не отправлено'
-)
-
-INVALID_RESPONSE_BODY_MESSAGE = (
-    'Некорректный тип данных тела ответа, '
-    'ожидается json. '
-    'status_code: "{status_code}"; '
-    'response_body: "{body}"'
+    'Ошибка:"{exception}"; Сообщение: "{message}"; не отправлено.'
 )
 NO_HOMEWORK_UPDATES_MESSAGE = 'Обновлений по домашним работам не найдено'
 EXCEPTION_MESSAGE = 'Application Error: {error}'
@@ -70,7 +65,7 @@ def check_tokens():
     """Проверка значений обязательных переменных окружений приложения."""
     env_names = [
         var for var in REQUIRED_ENV_VARS
-        if globals()[var] in (None, '')
+        if not globals()[var]
     ]
     if env_names:
         logging.critical(ENV_ERROR_MESSAGE.format(env_name=env_names))
@@ -84,7 +79,8 @@ def send_message(bot, message):
         logging.debug(SENT_TO_TG_MESSAGE.format(message=message))
     except Exception as e:
         logging.exception(NOT_SENT_TO_TG_MESSAGE.format(
-            exception=e, message=message))
+            exception=e, message=message
+        ))
         return False
     return True
 
@@ -92,17 +88,18 @@ def send_message(bot, message):
 def get_api_answer(timestamp):
     """Запрос и получение ответа от GET /homework_statuses/."""
     params = {'from_date': timestamp}
+    request_params = dict(
+        url=ENDPOINT,
+        headers=HEADERS,
+        params=params
+    )
     try:
-        response = requests.get(ENDPOINT,
-                                headers=HEADERS,
-                                params=params)
+        response = requests.get(**request_params)
     except RequestException as e:
         raise ConnectionError(
-            CONNECTION_ERROR_MESSAGE.format(
+            CONNECTION_ERROR_DETAIL_MESSAGE.format(
                 exception=e,
-                url=ENDPOINT,
-                headers=HEADERS,
-                params=params
+                **request_params
             )
         )
     response_json = response.json()
@@ -113,11 +110,9 @@ def get_api_answer(timestamp):
             for key in ('error', 'code')
         }
         raise ValueError(
-            INCORRECT_STATUS_CODE_MESSAGE.format(
+            INCORRECT_STATUS_CODE_DETAIL_MESSAGE.format(
                 status_code=status_code,
-                url=ENDPOINT,
-                headers=HEADERS,
-                params=params,
+                **request_params,
                 **error_key_values
             )
         )
@@ -202,12 +197,15 @@ if __name__ == '__main__':
     handlers = [logging.StreamHandler()]
     if APP_ENV != 'prod':
         handlers.append(
-            logging.FileHandler(os.path.dirname(__file__) + '/.log'))
+            logging.FileHandler(os.path.dirname(__file__) + '/.log')
+        )
 
     logging.basicConfig(
-        format=('%(asctime)s - '
-                '[%(levelname)s] - '
-                '%(funcName)s::%(lineno)d: %(message)s'),
+        format=(
+            '%(asctime)s - '
+            '[%(levelname)s] - '
+            '%(funcName)s::%(lineno)d: %(message)s'
+        ),
         level=logging.DEBUG,
         handlers=[*handlers]
     )
