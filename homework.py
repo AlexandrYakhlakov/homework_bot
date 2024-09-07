@@ -50,7 +50,7 @@ NOT_SENT_TO_TG_MESSAGE = (
 NO_HOMEWORK_UPDATES_MESSAGE = 'Обновлений по домашним работам не найдено'
 EXCEPTION_MESSAGE = 'Application Error: {error}'
 
-RETRY_PERIOD = 10
+RETRY_PERIOD = 10 * 60
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
