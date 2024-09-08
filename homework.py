@@ -20,7 +20,8 @@ REQUIRED_ENV_VARS = ['PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID']
 ENV_ERROR_MESSAGE = 'Missing required environment variables: "{env_name}"'
 TYPE_ERROR_MESSAGE = (
     '"{name}" type is not "{expected_type}". '
-    '"{name}" is "{actual_type}"')
+    '"{name}" is "{actual_type}"'
+)
 KEY_ERROR_MESSAGE = 'Key "{key_name}" not in "{dict_name}"'
 UNKNOWN_STATUS_HOMEWORK_MESSAGE = 'Неизвестный статус работы: {name}'
 UPDATE_STATUS_HOMEWORK_MESSAGE = (
